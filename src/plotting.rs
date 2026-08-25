@@ -43,7 +43,21 @@ pub struct PlotOptions {
     pub output_format: String,
 }
 
-fn format_si(value: u64) -> String {
+// compute the min number of digits so adjacent ticks render distinctly
+fn si_decimals(step: u64, threshold: u64) -> usize {
+    if step >= threshold {
+        return 0;
+    }
+    let mut d = 0;
+    let mut s = (step as f64) / (threshold as f64);
+    while s < 0.9999 && d < 3 {
+        s *= 10.0;
+        d += 1;
+    }
+    d
+}
+
+fn format_si(value: u64, step: u64) -> String {
     const PREFIXES: &[(u64, &str)] = &[
         (1_000_000_000_000, "T"),
         (1_000_000_000, "G"),
@@ -58,8 +72,9 @@ fn format_si(value: u64) -> String {
             if remainder == 0 {
                 return format!("{}{}", whole, prefix);
             }
+            let decimals = si_decimals(step, threshold);
             let frac = (value as f64) / (threshold as f64);
-            return format!("{:.1}{}", frac, prefix);
+            return format!("{:.*}{}", decimals, frac, prefix);
         }
     }
 
@@ -76,8 +91,8 @@ fn hex_key_points(range_end: usize, max_labels: usize) -> Vec<usize> {
     (0..=range_end).step_by(step).collect()
 }
 
-// calculates decimal-friendly intervals for labels
-fn decimal_key_points(range_end: usize, max_labels: usize) -> Vec<usize> {
+// calculates decimal-friendly step
+fn decimal_step(range_end: usize, max_labels: usize) -> usize {
     let ideal_step = range_end / max_labels;
     let magnitude = 10_usize.pow((ideal_step as f64).log10().floor() as u32);
     let nice_step = if ideal_step <= magnitude {
@@ -89,7 +104,12 @@ fn decimal_key_points(range_end: usize, max_labels: usize) -> Vec<usize> {
     } else {
         10 * magnitude
     };
-    let step = nice_step.max(1);
+    nice_step.max(1)
+}
+
+// calculates decimal-friendly intervals for labels
+fn decimal_key_points(range_end: usize, max_labels: usize) -> Vec<usize> {
+    let step = decimal_step(range_end, max_labels);
     (0..=range_end).step_by(step).collect::<Vec<_>>()
 }
 
@@ -259,10 +279,10 @@ fn plot_regions_with_backend<Backend: plotters::backend::DrawingBackend>(
 
     root.fill(&WHITE).unwrap();
 
-    let x_key_points = if opts.si_labels {
-        decimal_key_points(file_len, 50)
+    let (x_key_points, si_step) = if opts.si_labels {
+        (decimal_key_points(file_len, 50), decimal_step(file_len, 50))
     } else {
-        hex_key_points(file_len, 50)
+        (hex_key_points(file_len, 50), 0)
     };
 
     let mut builder = ChartBuilder::on(&root);
@@ -412,7 +432,7 @@ fn plot_regions_with_backend<Backend: plotters::backend::DrawingBackend>(
         .x_label_formatter(&|offset| {
             let addr = *offset as u64 + base_address;
             if opts.si_labels {
-                format_si(addr)
+                format_si(addr, si_step as u64)
             } else {
                 format!("{:x}", addr)
             }
@@ -602,4 +622,36 @@ pub fn plot_divs(file_name: &str, file_len: usize, det_res: &ProcessedDetectionR
         .z_labels(20)
         .draw()
         .unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_si_has_no_duplicate_labels_at_50k_step() {
+        let step = 50_000;
+        let labels: Vec<String> =
+            (0..40).map(|i| format_si(i as u64 * step, step)).collect();
+        let mut sorted = labels.clone();
+        sorted.dedup();
+        assert_eq!(
+            sorted.len(),
+            labels.len(),
+            "duplicate SI labels: {:?}",
+            labels
+        );
+    }
+
+    #[test]
+    fn format_si_values() {
+        let step = 50_000;
+        assert_eq!(format_si(0, step), "0");
+        assert_eq!(format_si(950_000, step), "950k");
+        assert_eq!(format_si(1_000_000, step), "1M");
+        assert_eq!(format_si(1_050_000, step), "1.05M");
+        assert_eq!(format_si(1_100_000, step), "1.10M");
+        assert_eq!(format_si(1_150_000, step), "1.15M");
+        assert_eq!(format_si(1_500_000, step), "1.50M");
+    }
 }

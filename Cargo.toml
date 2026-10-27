@@ -13,11 +13,18 @@ log = "0.4.19"
 memmap = "0.7.0"
 plotters = "0.3.7"
 rayon = "1.10.0"
-rust-embed = { version = "8.5.0", features = ["debug-embed"] }
+rust-embed = { version = "8.5.0", features = ["debug-embed", "interpolate-folder-path"] }
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.133"
 simple_logger = "4.1.0"
 
+[build-dependencies]
+lzma-rs = "0.3.0"
+
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
 rand = "0.8.5"
+
+# Decompressing the corpus in build.rs is slow without optimizations.
+[profile.dev.build-override]
+opt-level = 3

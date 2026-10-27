@@ -12,13 +12,19 @@ Cisco boot ROM memory dump:
 
 ## Installation
 
-Including blobs in version control is a Bad Idea. Thus you will have to
-download the current corpus and unpack it before you can build the executable.
-Here's a one-liner for that:
+The corpus (`cpu_rec_corpus/`) is stored in this repository as xz-compressed
+files via [git-lfs](https://git-lfs.com/) and decompressed during the build, so
+you need git-lfs to be installed before cloning. On Debian-based systems:
 
+```shell
+apt install git-lfs
+git lfs install
 ```
-curl --proto '=https' --tlsv1.2 -sSf https://valentinobst.de/a13f15d91f0f8846d748e42e7a881f783eb8f922861a63d9dfb74824d21337039dd8216f0373c3e5820c5e32de8f0a1880ec55456ff0da39f17d32f567d62b84/cpu_rec_corpus.tar.gz -o cpu_rec_corpus.tar.gz && tar xf cpu_rec_corpus.tar.gz && rm cpu_rec_corpus.tar.gz
-```
+
+If you already cloned the repository without git-lfs, fetch the corpus with
+`git lfs pull`. The build will fail with a corresponding message if the corpus
+files are missing. For the same reason, `cargo install --git` does not work, as
+cargo does not fetch git-lfs files.
 
 Building this project requires
 [`pkg-config`](https://en.wikipedia.org/wiki/Pkg-config)

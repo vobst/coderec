@@ -25,7 +25,7 @@ use rayon::prelude::*;
 use rust_embed::Embed;
 
 #[derive(Embed)]
-#[folder = "cpu_rec_corpus"]
+#[folder = "$OUT_DIR/cpu_rec_corpus"]
 struct Corpus;
 
 #[allow(dead_code)]

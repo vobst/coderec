@@ -1,6 +1,6 @@
 /target
-cpu_rec_corpus/
 *.bmp
 *.svg
 *.png
 *.bin
+cpu_rec_corpus/*.corpus

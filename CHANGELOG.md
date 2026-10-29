@@ -1,6 +1,7 @@
 unreleased:
 - include corpus in repository (xz-compressed, via git-lfs)
 - add LoongArch64 corpus
+- add RISC-Vc corpus for compressed (RVC) instructions
 
 0.1.3:
 - add base-address option

@@ -1,5 +1,6 @@
 unreleased:
 - include corpus in repository (xz-compressed, via git-lfs)
+- add LoongArch64 corpus
 
 0.1.3:
 - add base-address option
